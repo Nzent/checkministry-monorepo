@@ -2,8 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import * as schema from '@repo/drizzle-database';
-
+import * as schema from './schema';
 export const DRIZZLE = Symbol('DRIZZLE');
 
 @Global()
