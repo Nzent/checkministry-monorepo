@@ -36,8 +36,19 @@ export class OrderController {
 
   // update order by id
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: { orderDescription: string }) {
-    return this.orderService.update(+id, body.orderDescription);
+  update(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      orderDescription: string;
+      productIds?: number[];
+    },
+  ) {
+    return this.orderService.update(
+      +id,
+      body.orderDescription,
+      body.productIds || [],
+    );
   }
 
   // delete order

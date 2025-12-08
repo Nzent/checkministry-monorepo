@@ -64,13 +64,39 @@ export class OrderService {
   }
 
   // update one order
-  async update(id: number, orderDescription: string) {
+  // UPDATE order AND its mapped products
+  async update(
+    id: number,
+    orderDescription: string,
+    productIds: number[] = [],
+  ) {
+    // 1. Update order description
     const [updatedOrder] = await this.db
       .update(orders)
       .set({ orderDescription })
       .where(eq(orders.Id, id))
       .returning();
-    return updatedOrder;
+
+    if (!updatedOrder) {
+      throw new Error(`Order with ID ${id} not found`);
+    }
+
+    // 2. Delete existing product mappings
+    await this.db
+      .delete(orderProductMap)
+      .where(eq(orderProductMap.orderId, id));
+
+    // 3. Add new product mappings if provided
+    if (productIds && productIds.length > 0) {
+      const orderProductEntries = productIds.map((productId) => ({
+        orderId: id,
+        productId,
+      }));
+
+      await this.db.insert(orderProductMap).values(orderProductEntries);
+    }
+
+    return this.findOne(id); // Return the updated order with products
   }
 
   // delete order
