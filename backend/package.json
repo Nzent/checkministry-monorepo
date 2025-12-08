@@ -5,6 +5,7 @@
   "author": "nisalk",
   "private": true,
   "scripts": {
+    "db:seed": "ts-node ./src/drizzle/seed.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
