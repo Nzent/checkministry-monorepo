@@ -1,9 +1,9 @@
 export interface IOrder {
-  OrderId: number;
-  OrderDescription: string;
-  CountOfProducts: number;
-  CreatedDate: string;
-  Products?: Product[];
+  Id: number;
+  orderDescription: string;
+  countOfProducts: number;
+  createdDate: string;
+  products?: Product[];
 }
 
 export interface Product {

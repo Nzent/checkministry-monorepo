@@ -1,4 +1,5 @@
 "use client"
+"use no memo"
 
 import { useState } from "react"
 import {
@@ -15,7 +16,6 @@ import {
 } from "@tanstack/react-table"
 import { AlertCircle, ChevronDown, MoreHorizontal } from "lucide-react"
 
-
 import { Input } from "@/components/ui/input"
 import {
     Table,
@@ -28,17 +28,12 @@ import {
 import { IconCopy, IconPencil, IconTrashX } from "@tabler/icons-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { useDeleteOrder, useOrders } from "@/hooks/useOrders"
 import { IOrder } from "@/types/order"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { DialogHeader, DialogFooter } from "../ui/dialog"
-
-
-
-
 
 export function OrderManagementTable() {
     const [sorting, setSorting] = useState<SortingState>([])
@@ -51,37 +46,12 @@ export function OrderManagementTable() {
     const { data: Orders, isLoading, error, isError } = useOrders();
     const deleteOrderMutation = useDeleteOrder();
 
-
     const [globalFilter, setGlobalFilter] = useState("")
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const tableData = Orders || []
 
     const columns: ColumnDef<IOrder>[] = [
-        // select
-        {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
-            enableSorting: false,
-            enableHiding: false,
-        },
-
-        // order id - FIXED: lowercase 'id'
+        // order id
         {
             accessorKey: "Id",
             header: "Order ID",
@@ -89,7 +59,7 @@ export function OrderManagementTable() {
                 <div className="capitalize">{row.getValue("Id")}</div>
             ),
         },
-        // order description - FIXED: lowercase
+        // order description
         {
             accessorKey: "orderDescription",
             header: "Order Description",
@@ -105,7 +75,7 @@ export function OrderManagementTable() {
                 <div className="capitalize">{row.getValue("countOfProducts")}</div>
             ),
         },
-        // created date - FIXED: lowercase
+        // created date
         {
             accessorKey: "createdAt",
             header: "Created Date",
@@ -135,9 +105,11 @@ export function OrderManagementTable() {
                             >
                                 <IconCopy /> Copy Order ID
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <IconPencil /> Edit Order
-                            </DropdownMenuItem>
+                            <Link href={"/update-order/" + order.getValue("Id")}>
+                                <DropdownMenuItem>
+                                    <IconPencil /> Edit Order
+                                </DropdownMenuItem>
+                            </Link>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-red-500" onClick={() => handleDelete(order.getValue("Id"))}>
                                 <IconTrashX className="text-red-500" /> Delete Order
@@ -149,8 +121,6 @@ export function OrderManagementTable() {
         },
     ]
 
-
-
     const table = useReactTable({
         data: tableData,
         columns,
@@ -161,12 +131,21 @@ export function OrderManagementTable() {
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
+        onGlobalFilterChange: setGlobalFilter,
         onRowSelectionChange: setRowSelection,
+        globalFilterFn: (row, columnId, filterValue) => {
+            const searchValue = filterValue.toLowerCase()
+            const orderId = String(row.getValue("Id")).toLowerCase()
+            const orderDescription = String(row.getValue("orderDescription")).toLowerCase()
+
+            return orderId.includes(searchValue) || orderDescription.includes(searchValue)
+        },
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
+            globalFilter
         },
     })
 
@@ -186,26 +165,18 @@ export function OrderManagementTable() {
             },
             onError: (error) => {
                 console.error('Failed to delete order:', error)
-                // Optionally keep dialog open to show error
             }
         })
     }
 
-
     return (
         <>
-
             <div className="w-full">
                 <div className="flex items-center py-4">
                     <Input
                         placeholder="Filter by order id or description..."
-                        value={globalFilter}
-                        onChange={(event) => {
-                            const value = event.target.value
-                            setGlobalFilter(value)
-                            table.getColumn("Id")?.setFilterValue(value)
-                            table.getColumn("orderDescription")?.setFilterValue(value)
-                        }}
+                        value={globalFilter ?? ""}
+                        onChange={(event) => setGlobalFilter(event.target.value)}
                         className="max-w-sm"
                     />
 

@@ -3,14 +3,16 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, CheckCircle2Icon, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useProducts, useCreateOrder } from '@/hooks/useOrders'
+import { useOrder, useProducts, useUpdateOrder } from '@/hooks/useOrders'
+import { useEffect } from 'react'
+
 // Form validation schema
 const formSchema = z.object({
     orderDescription: z.string().min(1, 'Order description is required').max(100, 'Maximum 100 characters'),
@@ -19,18 +21,23 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-const NewOrderPage = () => {
+const UpdateOrderForm = () => {
     const router = useRouter()
+    const { id } = useParams()
 
-    const { data: products, isLoading, error: productsError } = useProducts()
-    const createOrderMutation = useCreateOrder()
+    const { data: products, isLoading: productsLoading, error: productsError } = useProducts()
+    const { data: orderData, isLoading: orderLoading } = useOrder(Number(id))
+    const updateOrderMutation = useUpdateOrder()
 
+    console.log(orderData);
+    
     const {
         register,
         handleSubmit,
         formState: { errors },
         setValue,
         watch,
+        reset,
     } = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -38,6 +45,17 @@ const NewOrderPage = () => {
             productIds: [],
         },
     })
+
+    // Update form when order data loads
+    useEffect(() => {
+        if (orderData) {
+            reset({
+                orderDescription: orderData.orderDescription || '',
+                // Extract product IDs from products array
+                productIds: orderData.products?.map(product => product.Id) || [],
+            })
+        }
+    }, [orderData, reset])
 
     // Just watch the form value - no separate state needed
     const selectedProducts = watch('productIds') || []
@@ -63,27 +81,27 @@ const NewOrderPage = () => {
 
     // Handle form submission
     const onSubmit = async (data: FormData) => {
-
         try {
-            const result = await createOrderMutation.mutateAsync({
-                orderDescription: data.orderDescription,
-                productIds: selectedProducts
+            const result = await updateOrderMutation.mutateAsync({
+                id: Number(id),
+                data: {
+                    orderDescription: data.orderDescription,
+                    productIds: selectedProducts
+                }
             })
 
-            console.log('Order created:', result)
-
+            console.log('Order updated:', result)
         } catch (error) {
-            console.error('Failed to create order:', error)
+            console.error('Failed to update order:', error)
         }
+    }
 
-    };
-
-
-    if (isLoading) {
+    // Show loading state while fetching order or products
+    if (orderLoading || productsLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Loader2 className="h-8 w-8 animate-spin mr-2" />
-                <span>Loading products...</span>
+                <span>Loading...</span>
             </div>
         )
     }
@@ -99,14 +117,24 @@ const NewOrderPage = () => {
         )
     }
 
+    if (!orderData) {
+        return (
+            <Alert variant="destructive" className="m-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                    Order not found.
+                </AlertDescription>
+            </Alert>
+        )
+    }
+
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-
             <Card>
                 <CardHeader>
-                    <CardTitle>Order Details</CardTitle>
+                    <CardTitle>Update Order #{id}</CardTitle>
                     <CardDescription>
-                        Fill in the order description and select products
+                        Modify the order description and selected products
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -121,7 +149,7 @@ const NewOrderPage = () => {
                                 placeholder="e.g., Order for Customer 1"
                                 {...register('orderDescription')}
                                 className={errors.orderDescription ? 'border-red-500' : ''}
-                                disabled={createOrderMutation.isPending}
+                                disabled={updateOrderMutation.isPending}
                             />
                             {errors.orderDescription && (
                                 <p className="text-sm text-red-500">{errors.orderDescription.message}</p>
@@ -138,7 +166,7 @@ const NewOrderPage = () => {
                                         variant="outline"
                                         size="sm"
                                         onClick={handleSelectAll}
-                                        disabled={createOrderMutation.isPending}
+                                        disabled={updateOrderMutation.isPending}
                                     >
                                         {selectedProducts.length === products.length ? 'Deselect All' : 'Select All'}
                                     </Button>
@@ -155,13 +183,11 @@ const NewOrderPage = () => {
                                         <div
                                             key={product.Id}
                                             className={`flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer ${selectedProducts.includes(product.Id)
-                                                ? 'border-blue-600 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
-                                                : 'border-gray-200 hover:border-gray-300 dark:border-gray-800'
+                                                    ? 'border-blue-600 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
+                                                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-800'
                                                 }`}
                                             onClick={() => handleProductToggle(product.Id)}
                                         >
-
-
                                             <div className="grid gap-1.5 font-normal flex-1">
                                                 <Label
                                                     htmlFor={`product-${product.Id}`}
@@ -178,47 +204,50 @@ const NewOrderPage = () => {
                                 </div>
                             )}
                         </div>
+
                         {/* Error Alert */}
-                        {createOrderMutation.isError && (
+                        {updateOrderMutation.isError && (
                             <Alert variant="destructive">
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Failed!</AlertTitle>
                                 <AlertDescription>
-                                    Failed to create order. Please try again.
+                                    Failed to update order. Please try again.
                                 </AlertDescription>
                             </Alert>
                         )}
+
                         {/* Success alert */}
-                        {createOrderMutation.isSuccess && (
+                        {updateOrderMutation.isSuccess && (
                             <Alert variant="default">
-                                <CheckCircle2Icon />
-                                <AlertTitle>Success!</AlertTitle>
+                                <CheckCircle2Icon className="h-4 w-4" />
+                                <AlertTitle>Updated!</AlertTitle>
                                 <AlertDescription>
-                                    Order submitted successfully!
+                                    Order updated successfully!
                                 </AlertDescription>
                             </Alert>
                         )}
+
                         {/* Form Actions */}
                         <div className="flex justify-end space-x-4 pt-4 border-t">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => router.push('/')}
-                                disabled={createOrderMutation.isPending}
+                                disabled={updateOrderMutation.isPending}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={createOrderMutation.isPending || selectedProducts.length === 0}
+                                disabled={updateOrderMutation.isPending || selectedProducts.length === 0}
                             >
-                                {createOrderMutation.isPending ? (
+                                {updateOrderMutation.isPending ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Creating...
+                                        Updating...
                                     </>
                                 ) : (
-                                    'Create Order'
+                                    'Update Order'
                                 )}
                             </Button>
                         </div>
@@ -229,4 +258,4 @@ const NewOrderPage = () => {
     )
 }
 
-export default NewOrderPage
+export default UpdateOrderForm
