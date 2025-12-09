@@ -15,17 +15,7 @@ import {
 } from "@tanstack/react-table"
 import { ChevronDown, MoreHorizontal } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import { Input } from "@/components/ui/input"
 import {
     Table,
@@ -37,80 +27,15 @@ import {
 } from "@/components/ui/table"
 import { IconCopy, IconPencil, IconTrashX } from "@tabler/icons-react"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useOrders } from "@/hooks/useOrders"
+import { IOrder } from "@/types/order"
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 
 
-export type IOrder = {
-    order_id: number
-    order_description: string
-    count_of_products: number
-    created_date: string
-}
-const data: IOrder[] = [
-    {
-        order_id: 1,
-        order_description: "Order for Customer 1",
-        count_of_products: 3,
-        created_date: "2024-06-01",
-    },
-    {
-        order_id: 2,
-        order_description: "Order for Customer 2",
-        count_of_products: 5,
-        created_date: "2024-06-03",
-    },
-    {
-        order_id: 3,
-        order_description: "Order for Self",
-        count_of_products: 2,
-        created_date: "2024-06-05",
-    },
-    {
-        order_id: 4,
-        order_description: "Order for Customer 3",
-        count_of_products: 4,
-        created_date: "2024-06-07",
-    },
-    {
-        order_id: 5,
-        order_description: "Bulk Order for Customer 4",
-        count_of_products: 10,
-        created_date: "2024-06-10",
-    },
-    {
-        order_id: 6,
-        order_description: "Order for Customer 5",
-        count_of_products: 1,
-        created_date: "2024-06-12",
-    },
-    {
-        order_id: 7,
-        order_description: "Replacement Order for Customer 2",
-        count_of_products: 2,
-        created_date: "2024-06-14",
-    },
-    {
-        order_id: 8,
-        order_description: "Order for Customer 6",
-        count_of_products: 6,
-        created_date: "2024-06-16",
-    },
-    {
-        order_id: 9,
-        order_description: "Test Order",
-        count_of_products: 3,
-        created_date: "2024-06-18",
-    },
-    {
-        order_id: 10,
-        order_description: "Order for Customer 7",
-        count_of_products: 8,
-        created_date: "2024-06-20",
-    },
-];
-
-
-export const columns: ColumnDef<IOrder> = [
+export const columns: ColumnDef<IOrder>[] = [
     // select
     {
         id: "select",
@@ -135,44 +60,44 @@ export const columns: ColumnDef<IOrder> = [
         enableHiding: false,
     },
 
-    //   order id
+    // order id - FIXED: lowercase 'id'
     {
-        accessorKey: "order_id",
+        accessorKey: "Id",
         header: "Order ID",
         cell: ({ row }) => (
-            <div className="capitalize">{row.getValue("order_id")}</div>
+            <div className="capitalize">{row.getValue("Id")}</div>
         ),
     },
-    //   order description
+    // order description - FIXED: lowercase
     {
-        accessorKey: "order_description",
+        accessorKey: "orderDescription",
         header: "Order Description",
         cell: ({ row }) => (
-            <div className="capitalize">{row.getValue("order_description")}</div>
+            <div className="capitalize">{row.getValue("orderDescription")}</div>
         ),
     },
-    //   count of products
+    // count of products
     {
-        accessorKey: "count_of_products",
+        accessorKey: "countOfProducts",
         header: "Count of Products",
         cell: ({ row }) => (
-            <div className="capitalize">{row.getValue("count_of_products")}</div>
+            <div className="capitalize">{row.getValue("countOfProducts")}</div>
         ),
     },
-    //   created date
+    // created date - FIXED: lowercase
     {
-        accessorKey: "created_date",
+        accessorKey: "createdAt",
         header: "Created Date",
         cell: ({ row }) => (
-            <div className="capitalize">{row.getValue("created_date")}</div>
+            <div className="capitalize">{row.getValue("createdAt")}</div>
         ),
     },
-    //   actions
+    // actions
     {
         id: "actions",
         enableHiding: false,
         cell: ({ row }) => {
-            const payment = row.original
+            const order = row.original
 
             return (
                 <DropdownMenu>
@@ -185,16 +110,17 @@ export const columns: ColumnDef<IOrder> = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem
-                            onClick={() => navigator.clipboard.writeText(payment.id)}
+                            onClick={() => navigator.clipboard.writeText(order.OrderId)}
                         >
                             <IconCopy /> Copy Order ID
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                        >
+                        <DropdownMenuItem>
                             <IconPencil /> Edit Order
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-500"><IconTrashX className="text-red-500" /> Delete Order</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-500">
+                            <IconTrashX className="text-red-500" /> Delete Order
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             )
@@ -211,8 +137,10 @@ export function OrderManagementTable() {
         React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
+    const { data: Orders, isLoading, error } = useOrders();
+    const tableData = Orders || []
     const table = useReactTable({
-        data,
+        data: tableData,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -235,9 +163,9 @@ export function OrderManagementTable() {
             <div className="flex items-center py-4">
                 <Input
                     placeholder="Filter by order id or description..."
-                    value={(table.getColumn("order_id")?.getFilterValue() as string) ?? ""}
+                    value={(table.getColumn("Id")?.getFilterValue() as string) ?? ""}
                     onChange={(event) =>
-                        table.getColumn("order_id")?.setFilterValue(event.target.value)
+                        table.getColumn("Id")?.setFilterValue(event.target.value)
                     }
                     className="max-w-sm"
                 />
