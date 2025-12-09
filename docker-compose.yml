@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_service
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend_service
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+    depends_on:
+      - backend
+    restart: always
+  database:
+    image: postgres
+    container_name: checkministryDB
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: checkministry
+      POSTGRES_PASSWORD: checkministry
+      POSTGRES_DB: checkministryDB

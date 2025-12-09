@@ -14,7 +14,7 @@ import { useProducts, useCreateOrder } from '@/hooks/useOrders'
 // Form validation schema
 const formSchema = z.object({
     orderDescription: z.string().min(1, 'Order description is required').max(100, 'Maximum 100 characters'),
-    productIds: z.array(z.number()).optional().default([]),
+    productIds: z.array(z.number()).default([]).optional(),
 })
 
 type FormData = z.infer<typeof formSchema>

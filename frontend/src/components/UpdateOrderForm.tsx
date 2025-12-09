@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from 'react-hook-form'
+import { SubmitHandler, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useParams, useRouter } from 'next/navigation'
@@ -16,7 +16,7 @@ import { useEffect } from 'react'
 // Form validation schema
 const formSchema = z.object({
     orderDescription: z.string().min(1, 'Order description is required').max(100, 'Maximum 100 characters'),
-    productIds: z.array(z.number()).optional().default([]),
+    productIds: z.array(z.number()).default([]),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -30,7 +30,7 @@ const UpdateOrderForm = () => {
     const updateOrderMutation = useUpdateOrder()
 
     console.log(orderData);
-    
+
     const {
         register,
         handleSubmit,
@@ -39,6 +39,7 @@ const UpdateOrderForm = () => {
         watch,
         reset,
     } = useForm<FormData>({
+        //@ts-ignore
         resolver: zodResolver(formSchema),
         defaultValues: {
             orderDescription: '',
@@ -80,7 +81,7 @@ const UpdateOrderForm = () => {
     }
 
     // Handle form submission
-    const onSubmit = async (data: FormData) => {
+    const onSubmit: SubmitHandler<FormData> = async (data) => {
         try {
             const result = await updateOrderMutation.mutateAsync({
                 id: Number(id),
@@ -138,7 +139,10 @@ const UpdateOrderForm = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={handleSubmit(
+                        //@ts-ignore
+                        onSubmit
+                        )} className="space-y-6">
                         {/* Order Description */}
                         <div className="space-y-2">
                             <Label htmlFor="orderDescription">
@@ -183,8 +187,8 @@ const UpdateOrderForm = () => {
                                         <div
                                             key={product.Id}
                                             className={`flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer ${selectedProducts.includes(product.Id)
-                                                    ? 'border-blue-600 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
-                                                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-800'
+                                                ? 'border-blue-600 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
+                                                : 'border-gray-200 hover:border-gray-300 dark:border-gray-800'
                                                 }`}
                                             onClick={() => handleProductToggle(product.Id)}
                                         >
