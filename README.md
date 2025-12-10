@@ -4,6 +4,13 @@ Full-stack Assessment Project
 Next.js (Frontend) · NestJS (Backend) · Drizzle ORM · PostgreSQL (Neon) · Docker · Jest · ShadCN UI
 
 ---
+## Live Hosted Link
+
+
+
+
+## API Endpoints (Postman)
+https://www.postman.com/lunar-robot-985940/workspace/checkministry-assesment
 
 ## 🛠 Tech Stack
 
@@ -48,7 +55,7 @@ git clone <repo-url>
 ```
 
 ```sh
-cd checkministry-order-management/backend
+cd checkministry-repo/backend
 ```
 
 ### 2. Create `.env` file in `backend/`
@@ -58,7 +65,7 @@ DATABASE_URL=postgres://<your-neon-or-docker-db-url>
 PORT=4000
 ```
 
-### 3. Optional: Run PostgreSQL using Docker
+### 3. Optional: Run PostgreSQL using Docker OR use NeonDB (Recommended)
 
 ```sh
 docker run --name checkministry-db \
@@ -181,11 +188,15 @@ The project supports Dockerization for both frontend and backend.
 
 ## 📸 Demo Assets
 
-All screenshots and demo video files are inside:
+All screenshots and demo video files are inside: Assets folder
 
-```
-/assets/
-```
+## Documentations
+
+- NextJS - https://nextjs.org/
+- NestJS - https://nestjs.com/
+- NeonDB - https://neon.com/
+- Docker - https://docker.com/
+
 ## Assumptions
 - I assumed the product quantity would never exceed 10 for this test
 - I assumed the API would return orders sorted by newest first
