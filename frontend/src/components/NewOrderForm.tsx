@@ -1,84 +1,79 @@
 "use client"
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import Form from 'next/form'
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, CheckCircle2Icon, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle, CheckCircle2Icon, Loader2 } from 'lucide-react'
 import { useProducts, useCreateOrder } from '@/hooks/useOrders'
-// Form validation schema
-const formSchema = z.object({
-    orderDescription: z.string().min(1, 'Order description is required').max(100, 'Maximum 100 characters'),
-    productIds: z.array(z.number()).default([]).optional(),
-})
 
-type FormData = z.infer<typeof formSchema>
+interface FormErrors {
+    orderDescription?: string
+}
 
 const NewOrderPage = () => {
     const router = useRouter()
 
+    // Data fetching hooks
     const { data: products, isLoading, error: productsError } = useProducts()
     const createOrderMutation = useCreateOrder()
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        setValue,
-        watch,
-    } = useForm<FormData>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            orderDescription: '',
-            productIds: [],
-        },
-    })
+    // Form state
+    const [orderDescription, setOrderDescription] = useState('')
+    const [selectedProducts, setSelectedProducts] = useState<number[]>([])
+    const [errors, setErrors] = useState<FormErrors>({})
 
-    // Just watch the form value - no separate state needed
-    const selectedProducts = watch('productIds') || []
+    // Form validation
+    const validateForm = (): boolean => {
+        const newErrors: FormErrors = {}
 
-    // Handle product selection
-    const handleProductToggle = (productId: number) => {
-        const newSelectedProducts = selectedProducts.includes(productId)
-            ? selectedProducts.filter(id => id !== productId)
-            : [...selectedProducts, productId]
+        if (!orderDescription.trim()) {
+            newErrors.orderDescription = 'Order description is required'
+        } else if (orderDescription.length > 100) {
+            newErrors.orderDescription = 'Maximum 100 characters'
+        }
 
-        setValue('productIds', newSelectedProducts, { shouldDirty: true })
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
     }
 
-    // Handle select all products
+    // Product selection handlers
+    const handleProductToggle = (productId: number) => {
+        setSelectedProducts(prev =>
+            prev.includes(productId)
+                ? prev.filter(id => id !== productId)
+                : [...prev, productId]
+        )
+    }
+
     const handleSelectAll = () => {
         if (!products) return
 
         const allProductIds = products.map(product => product.Id)
-        const newSelectedProducts = selectedProducts.length === products.length ? [] : allProductIds
-
-        setValue('productIds', newSelectedProducts, { shouldDirty: true })
+        setSelectedProducts(
+            selectedProducts.length === products.length ? [] : allProductIds
+        )
     }
 
-    // Handle form submission
-    const onSubmit = async (data: FormData) => {
+    // Form submission
+    const handleSubmit = async () => {
+        if (!validateForm()) return
 
         try {
-            const result = await createOrderMutation.mutateAsync({
-                orderDescription: data.orderDescription,
+            await createOrderMutation.mutateAsync({
+                orderDescription,
                 productIds: selectedProducts
             })
-
-            console.log('Order created:', result)
-
         } catch (error) {
             console.error('Failed to create order:', error)
         }
+    }
 
-    };
-
-
+    // Loading state
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -88,6 +83,7 @@ const NewOrderPage = () => {
         )
     }
 
+    // Error state
     if (productsError) {
         return (
             <Alert variant="destructive" className="m-4">
@@ -101,7 +97,6 @@ const NewOrderPage = () => {
 
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-4xl">
-
             <Card>
                 <CardHeader>
                     <CardTitle>Order Details</CardTitle>
@@ -110,7 +105,7 @@ const NewOrderPage = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <Form action={handleSubmit} className="space-y-6">
                         {/* Order Description */}
                         <div className="space-y-2">
                             <Label htmlFor="orderDescription">
@@ -119,12 +114,13 @@ const NewOrderPage = () => {
                             <Input
                                 id="orderDescription"
                                 placeholder="e.g., Order for Customer 1"
-                                {...register('orderDescription')}
+                                value={orderDescription}
+                                onChange={(e) => setOrderDescription(e.target.value)}
                                 className={errors.orderDescription ? 'border-red-500' : ''}
                                 disabled={createOrderMutation.isPending}
                             />
                             {errors.orderDescription && (
-                                <p className="text-sm text-red-500">{errors.orderDescription.message}</p>
+                                <p className="text-sm text-red-500">{errors.orderDescription}</p>
                             )}
                         </div>
 
@@ -155,13 +151,11 @@ const NewOrderPage = () => {
                                         <div
                                             key={product.Id}
                                             className={`flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer ${selectedProducts.includes(product.Id)
-                                                ? 'border-blue-600 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
-                                                : 'border-gray-200 hover:border-gray-300 dark:border-gray-800'
+                                                    ? 'border-blue-600 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
+                                                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-800'
                                                 }`}
                                             onClick={() => handleProductToggle(product.Id)}
                                         >
-
-
                                             <div className="grid gap-1.5 font-normal flex-1">
                                                 <Label
                                                     htmlFor={`product-${product.Id}`}
@@ -178,6 +172,7 @@ const NewOrderPage = () => {
                                 </div>
                             )}
                         </div>
+
                         {/* Error Alert */}
                         {createOrderMutation.isError && (
                             <Alert variant="destructive">
@@ -188,16 +183,18 @@ const NewOrderPage = () => {
                                 </AlertDescription>
                             </Alert>
                         )}
-                        {/* Success alert */}
+
+                        {/* Success Alert */}
                         {createOrderMutation.isSuccess && (
                             <Alert variant="default">
-                                <CheckCircle2Icon />
+                                <CheckCircle2Icon className="h-4 w-4" />
                                 <AlertTitle>Success!</AlertTitle>
                                 <AlertDescription>
                                     Order submitted successfully!
                                 </AlertDescription>
                             </Alert>
                         )}
+
                         {/* Form Actions */}
                         <div className="flex justify-end space-x-4 pt-4 border-t">
                             <Button
@@ -222,7 +219,7 @@ const NewOrderPage = () => {
                                 )}
                             </Button>
                         </div>
-                    </form>
+                    </Form>
                 </CardContent>
             </Card>
         </div>

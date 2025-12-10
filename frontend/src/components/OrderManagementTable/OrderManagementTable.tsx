@@ -1,5 +1,4 @@
 "use client"
-"use no memo"
 
 import { useState } from "react"
 import {
@@ -36,6 +35,8 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { DialogHeader, DialogFooter } from "../ui/dialog"
 
 export function OrderManagementTable() {
+    "use no memo"
+
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] =
@@ -133,7 +134,7 @@ export function OrderManagementTable() {
         onColumnVisibilityChange: setColumnVisibility,
         onGlobalFilterChange: setGlobalFilter,
         onRowSelectionChange: setRowSelection,
-        globalFilterFn: (row, columnId, filterValue) => {
+        globalFilterFn: (row, filterValue) => {
             const searchValue = filterValue.toLowerCase()
             const orderId = String(row.getValue("Id")).toLowerCase()
             const orderDescription = String(row.getValue("orderDescription")).toLowerCase()
