@@ -33,6 +33,7 @@ const UpdateOrderForm = () => {
     useEffect(() => {
         if (orderData) {
             setOrderDescription(orderData.orderDescription || '')
+            //@ts-ignore
             setSelectedProducts(orderData.products || [])
         }
     }, [orderData])
