@@ -180,7 +180,7 @@ yarn test
 ## 🐳 Docker Compatible
 
 The project supports Dockerization for both frontend and backend.
-(If you want a ready `docker-compose.yml`, ask and I’ll generate it.)
+(If you want a ready `docker-compose.yml`
 
 ---
 
